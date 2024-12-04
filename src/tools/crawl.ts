@@ -3,6 +3,11 @@ import { wait } from './common';
 import { COUNTRIES, NODES } from './config';
 import { newUniqueDir } from './dir';
 import { toFile } from './screenshots';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const MYSTERIUM_HOST = process.env.MYSTERIUM_HOST || '127.0.0.1';
 
 export interface CrawlConfig {
     scenario: string;
@@ -42,9 +47,9 @@ const visitWebAndScreenShoot = async (workdir: string, country: string, config: 
 };
 
 const browserOptions = (proxyPort: number) => ({
-    headless: false, // headless mode introduces unexpected behaviour
+    headless: false,
     defaultViewport: { width: 2560, height: 1440 },
-    args: [`--proxy-server=http://localhost:${proxyPort}`],
+    args: [`--proxy-server=http://${MYSTERIUM_HOST}:${proxyPort}`],
 });
 
 const crawl = {

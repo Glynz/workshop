@@ -1,5 +1,11 @@
 import { Identity, IdentityRegistrationStatus, TequilapiClient, TequilapiClientFactory } from 'mysterium-vpn-js';
 import { log } from './common';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+const MYSTERIUM_HOST = process.env.MYSTERIUM_HOST || '127.0.0.1';
 
 export interface QuickConnectOptions {
     proxyPort: number;
@@ -16,28 +22,45 @@ export class NodeClient {
     private identity: string = '';
 
     constructor(port: number) {
-        this.api = new TequilapiClientFactory(`http://localhost:${port}/tequilapi`, 40_000).build();
+        this.api = new TequilapiClientFactory(`http://${MYSTERIUM_HOST}:${port}/tequilapi`, 40_000).build();
     }
 
     public async quickConnectTo(country: string, { proxyPort, retries }: QuickConnectOptions) {
         await this.cancelConnection();
-
         const proposals = await this.api.findProposals(proposalQuery(country));
-
-        for (const { providerId } of proposals) {
-            log(`connecting to ${country}... (proxyPort: ${proxyPort})`);
-            try {
-                // connect to provider
-                await this.api.connectionCreate(this.connectionOptions(providerId, proxyPort));
-                log(`connected to: ${country}! (${providerId})`);
-                return;
-            } catch (ignored: any) {}
-
-            retries -= 1;
-            if (retries === 0) {
+        
+        try {
+            if (proposals.length === 0) {
+                log(`No proposals found for country: ${country}`);
                 return;
             }
-            log(`failed to connect ${country}, retries left: ${retries}`);
+
+            for (const { providerId } of proposals) {
+                log(`connecting to ${country}... (proxyPort: ${proxyPort})`);
+                try {
+                    // Add delay between attempts
+                    await this.delay(1000);
+                    await this.api.connectionCreate(this.connectionOptions(providerId, proxyPort));
+                    log(`connected to: ${country}! (${providerId})`);
+                    return;
+                } catch (error: any) {
+                    // Log more specific error information
+                    log(`Connection error: ${error.message}`);
+                    if (error._originalError?.response?.data) {
+                        log(`Server response: ${JSON.stringify(error._originalError.response.data)}`);
+                    }
+                }
+
+                retries -= 1;
+                if (retries === 0) {
+                    log(`Exhausted all retries for ${country}`);
+                    return;
+                }
+                log(`failed to connect ${country}, retries left: ${retries}`);
+            }
+        } catch (error: any) {
+            log(`Fatal error during quick connect: ${error.message}`);
+            throw error;
         }
 
         log(`could not quick connect to ${country} ${proposals.length === 0 ? '(no proposals found...)' : ''}`);
@@ -81,6 +104,10 @@ export class NodeClient {
             consumerId: this.identity,
             connectOptions: { proxyPort: proxyPort },
         };
+    }
+
+    private async delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 }
 

@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer';
+import dotenv from 'dotenv';
 import { BOOKING_CRAWL_URL } from './constants';
 import { wait } from './tools/common';
 import { newUniqueDir } from './tools/dir';
@@ -6,6 +7,9 @@ import { toFile } from './tools/screenshots';
 import { buildNodeClient } from './tools/tequila';
 import { COUNTRIES } from './tools/config';
 
+dotenv.config();
+
+const MYSTERIUM_HOST = process.env.MYSTERIUM_HOST || '127.0.0.1';
 const PROXY_PORT = 40001;
 
 (async () => {
@@ -14,7 +18,7 @@ const PROXY_PORT = 40001;
     const browser = await puppeteer.launch({
         headless: false,
         defaultViewport: { width: 2560, height: 1440 },
-        args: [`--proxy-server=http://localhost:${PROXY_PORT}`],
+        args: [`--proxy-server=http://${MYSTERIUM_HOST}:${PROXY_PORT}`],
     });
     const page = await browser.newPage();
     const workdir = await newUniqueDir('booking_plain_');

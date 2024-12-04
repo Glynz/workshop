@@ -9,7 +9,6 @@
     "google-fleet": "ts-node src/googleFleet.ts",
     "hotels-fleet": "ts-node src/hotelsFleet.ts",
     "youtube-fleet": "ts-node src/youtubeFleet.ts",
-
     "fleet-start": "docker-compose up fleet",
     "fleet-stop": "docker-compose down",
     "fleet-restart": "yarn fleet-stop && yarn fleet-start",
@@ -23,6 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "@types/node": "^17.0.21",
+    "dotenv": "^16.4.7",
     "mysterium-vpn-js": "^19.3.0",
     "prettier": "^2.5.1",
     "puppeteer": "^13.4.1",
